@@ -22,9 +22,7 @@ func setup(c *caddy.Controller) error {
 	}
 
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		p := &unifinames{Next: next, Config: config}
-		p.Start()
-		return p
+		return &unifinames{Next: next, Config: config}
 	})
 
 	return nil

@@ -25,6 +25,7 @@ import (
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/miekg/dns"
+	"go.uber.org/atomic"
 )
 
 type unifinames struct {
@@ -34,34 +35,35 @@ type unifinames struct {
 	aaaaClients []dns.AAAA
 	lastUpdate  time.Time
 	mu          sync.Mutex
-}
-
-func (p *unifinames) Start() {
-	go func() {
-		update := func() {
-			p.mu.Lock()
-			if p.Config.Debug {
-				log.Println("[unifi-names] updating clients")
-			}
-			if err := p.getClients(context.Background()); err != nil {
-				p.mu.Unlock()
-				log.Printf("[unifi-names] unable to get clients: %v\n", err)
-				return
-			}
-			p.mu.Unlock()
-			log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
-			p.lastUpdate = time.Now()
-		}
-		update()
-		t := time.NewTicker(time.Duration(p.Config.TTL) * time.Second)
-		for range t.C {
-			update()
-		}
-	}()
+	haveRoutine atomic.Bool
 }
 
 // ServeDNS implements the middleware.Handler interface.
 func (p *unifinames) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	if !p.haveRoutine.Load() {
+		p.haveRoutine.Store(true)
+		go func() {
+			update := func() {
+				p.mu.Lock()
+				if p.Config.Debug {
+					log.Println("[unifi-names] updating clients")
+				}
+				if err := p.getClients(context.Background()); err != nil {
+					p.mu.Unlock()
+					log.Printf("[unifi-names] unable to get clients: %v\n", err)
+					return
+				}
+				p.mu.Unlock()
+				log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
+				p.lastUpdate = time.Now()
+			}
+			update()
+			t := time.NewTicker(time.Duration(p.Config.TTL) * time.Second)
+			for range t.C {
+				update()
+			}
+		}()
+	}
 	if p.resolve(w, r) {
 		return dns.RcodeSuccess, nil
 	}

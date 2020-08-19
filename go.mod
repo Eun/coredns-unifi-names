@@ -8,4 +8,5 @@ require (
 	github.com/coredns/coredns v1.7.0
 	github.com/miekg/dns v1.1.31
 	github.com/stretchr/testify v1.5.1
+	go.uber.org/atomic v1.6.0
 )

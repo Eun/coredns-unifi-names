@@ -161,8 +161,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -178,7 +178,7 @@ func TestServeDNS(t *testing.T) {
 		require.Equal(t, dns.Type(dns.TypeA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
 		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
 		require.Equal(t, net.ParseIP("127.0.0.1"), d.GetMsgs()[0].Answer[0].(*dns.A).A)
-		require.Equal(t, 3599, d.GetMsgs()[0].Answer[0].Header().Ttl)
+		require.Equal(t, uint32(3600), d.GetMsgs()[0].Answer[0].Header().Ttl)
 	})
 
 	t.Run("AAAA", func(t *testing.T) {
@@ -200,8 +200,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -217,7 +217,7 @@ func TestServeDNS(t *testing.T) {
 		require.Equal(t, dns.Type(dns.TypeAAAA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
 		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
 		require.Equal(t, net.ParseIP("::1"), d.GetMsgs()[0].Answer[0].(*dns.AAAA).AAAA)
-		require.Equal(t, 3599, d.GetMsgs()[0].Answer[0].Header().Ttl)
+		require.Equal(t, uint32(3600), d.GetMsgs()[0].Answer[0].Header().Ttl)
 	})
 
 	t.Run("Unknown Client", func(t *testing.T) {
@@ -239,8 +239,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -272,8 +272,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{})
 		require.Equal(t, 0, len(d.GetMsgs()))
 	})
@@ -297,8 +297,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -333,8 +333,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -365,8 +365,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
-		p.Start()
-		time.Sleep(time.Second)
+		p.ServeDNS(context.Background(), &dummyResponseWriter{}, &dns.Msg{})
+		time.Sleep(time.Millisecond * 500)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
