@@ -30,10 +30,34 @@ import (
 type unifinames struct {
 	Next        plugin.Handler
 	Config      *config
-	aClients    []*dns.A
-	aaaaClients []*dns.AAAA
-	nextUpdate  time.Time
+	aClients    []dns.A
+	aaaaClients []dns.AAAA
+	lastUpdate  time.Time
 	mu          sync.Mutex
+}
+
+func (p *unifinames) Start() {
+	go func() {
+		update := func() {
+			p.mu.Lock()
+			if p.Config.Debug {
+				log.Println("[unifi-names] updating clients")
+			}
+			if err := p.getClients(context.Background()); err != nil {
+				p.mu.Unlock()
+				log.Printf("[unifi-names] unable to get clients: %v\n", err)
+				return
+			}
+			p.mu.Unlock()
+			log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
+			p.lastUpdate = time.Now()
+		}
+		update()
+		t := time.NewTicker(time.Duration(p.Config.TTL) * time.Second)
+		for range t.C {
+			update()
+		}
+	}()
 }
 
 // ServeDNS implements the middleware.Handler interface.
@@ -62,31 +86,29 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 
 		switch question.Qtype {
 		case dns.TypeA:
-			name := strings.ToLower(question.Name)
-			if p.shouldHandle(name) {
-				p.getClientsIfNeeded()
-			}
-			p.mu.Lock()
-			for _, client := range p.aClients {
-				if strings.EqualFold(client.Hdr.Name, question.Name) {
-					rrs = append(rrs, client)
-					break
+			if p.shouldHandle(strings.ToLower(question.Name)) {
+				p.mu.Lock()
+				for _, client := range p.aClients {
+					if strings.EqualFold(client.Hdr.Name, question.Name) {
+						client.Hdr.Ttl = uint32(time.Now().Sub(p.lastUpdate).Seconds())
+						rrs = append(rrs, &client)
+						break
+					}
 				}
+				p.mu.Unlock()
 			}
-			p.mu.Unlock()
 		case dns.TypeAAAA:
-			name := strings.ToLower(question.Name)
-			if p.shouldHandle(name) {
-				p.getClientsIfNeeded()
-			}
-			p.mu.Lock()
-			for _, client := range p.aaaaClients {
-				if strings.EqualFold(client.Hdr.Name, question.Name) {
-					rrs = append(rrs, client)
-					break
+			if p.shouldHandle(strings.ToLower(question.Name)) {
+				p.mu.Lock()
+				for _, client := range p.aaaaClients {
+					if strings.EqualFold(client.Hdr.Name, question.Name) {
+						client.Hdr.Ttl = uint32(time.Now().Sub(p.lastUpdate).Seconds())
+						rrs = append(rrs, &client)
+						break
+					}
 				}
+				p.mu.Unlock()
 			}
-			p.mu.Unlock()
 		}
 	}
 
@@ -110,23 +132,6 @@ func (p *unifinames) shouldHandle(name string) bool {
 		}
 	}
 	return false
-}
-
-func (p *unifinames) getClientsIfNeeded() {
-	if p.nextUpdate.Before(time.Now()) {
-		p.mu.Lock()
-		if p.Config.Debug {
-			log.Println("[unifi-names] updating clients")
-		}
-		if err := p.getClients(context.Background()); err != nil {
-			p.mu.Unlock()
-			log.Printf("[unifi-names] unable to get clients: %v\n", err)
-			return
-		}
-		p.mu.Unlock()
-		log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
-		p.nextUpdate = time.Now().Add(time.Duration(p.Config.TTL) * time.Second)
-	}
 }
 
 var reSetCookieToken = regexp.MustCompile(`unifises=([0-9a-zA-Z]+)`)
@@ -280,13 +285,13 @@ func (p *unifinames) getClients(ctx context.Context) error {
 
 		if ip.To4() != nil {
 			hdr.Rrtype = dns.TypeA
-			p.aClients = append(p.aClients, &dns.A{
+			p.aClients = append(p.aClients, dns.A{
 				Hdr: hdr,
 				A:   ip,
 			})
 		} else {
 			hdr.Rrtype = dns.TypeAAAA
-			p.aaaaClients = append(p.aaaaClients, &dns.AAAA{
+			p.aaaaClients = append(p.aaaaClients, dns.AAAA{
 				Hdr:  hdr,
 				AAAA: ip,
 			})

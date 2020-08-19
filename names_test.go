@@ -12,6 +12,8 @@ import (
 
 	"crypto/sha1"
 
+	"time"
+
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 )
@@ -159,6 +161,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -195,6 +199,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -231,6 +237,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -262,6 +270,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{})
 		require.Equal(t, 0, len(d.GetMsgs()))
 	})
@@ -285,6 +295,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -319,6 +331,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
@@ -349,6 +363,8 @@ func TestServeDNS(t *testing.T) {
 			},
 		}
 		d := &dummyResponseWriter{}
+		p.Start()
+		time.Sleep(time.Second)
 		p.ServeDNS(context.Background(), d, &dns.Msg{
 			Question: []dns.Question{
 				{
