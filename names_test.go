@@ -141,158 +141,6 @@ func MockUnifiController(fingerprint *[]byte, lan, name, ip string) *httptest.Se
 
 func TestServeDNS(t *testing.T) {
 	t.Run("A", func(t *testing.T) {
-		s := MockUnifiController(nil, "lan", "server1", "127.0.0.1")
-		defer s.Close()
-		p := unifinames{
-			Config: &config{
-				Networks: map[string]string{
-					"lan": "lan.",
-				},
-				TTL:                 60 * 60,
-				Debug:               true,
-				UnifiControllerURL:  s.URL,
-				UnifiSite:           "default",
-				UnifiUsername:       "admin",
-				UnifiPassword:       "admin",
-				UnifiSSLFingerprint: nil,
-			},
-		}
-		d := &dummyResponseWriter{}
-		p.ServeDNS(context.Background(), d, &dns.Msg{
-			Question: []dns.Question{
-				{
-					Name:   "server1.lan.",
-					Qclass: dns.ClassINET,
-					Qtype:  dns.TypeA,
-				},
-			},
-		})
-		require.Equal(t, 1, len(d.GetMsgs()))
-		require.Equal(t, 1, len(d.GetMsgs()[0].Answer))
-		require.Equal(t, dns.Class(dns.ClassINET), dns.Class(d.GetMsgs()[0].Answer[0].Header().Class))
-		require.Equal(t, dns.Type(dns.TypeA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
-		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
-		require.Equal(t, net.ParseIP("127.0.0.1"), d.GetMsgs()[0].Answer[0].(*dns.A).A)
-	})
-
-	t.Run("AAAA", func(t *testing.T) {
-		s := MockUnifiController(nil, "lan", "server1", "::1")
-		defer s.Close()
-		p := unifinames{
-			Config: &config{
-				Networks: map[string]string{
-					"lan": "lan.",
-				},
-				TTL:                 60 * 60,
-				Debug:               true,
-				UnifiControllerURL:  s.URL,
-				UnifiSite:           "default",
-				UnifiUsername:       "admin",
-				UnifiPassword:       "admin",
-				UnifiSSLFingerprint: nil,
-			},
-		}
-		d := &dummyResponseWriter{}
-		p.ServeDNS(context.Background(), d, &dns.Msg{
-			Question: []dns.Question{
-				{
-					Name:   "server1.lan.",
-					Qclass: dns.ClassINET,
-					Qtype:  dns.TypeAAAA,
-				},
-			},
-		})
-		require.Equal(t, 1, len(d.GetMsgs()))
-		require.Equal(t, 1, len(d.GetMsgs()[0].Answer))
-		require.Equal(t, dns.Class(dns.ClassINET), dns.Class(d.GetMsgs()[0].Answer[0].Header().Class))
-		require.Equal(t, dns.Type(dns.TypeAAAA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
-		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
-		require.Equal(t, net.ParseIP("::1"), d.GetMsgs()[0].Answer[0].(*dns.AAAA).AAAA)
-	})
-
-	t.Run("Unknown Client", func(t *testing.T) {
-		s := MockUnifiController(nil, "lan", "server1", "127.0.0.1")
-		defer s.Close()
-		p := unifinames{
-			Config: &config{
-				Networks: map[string]string{
-					"lan": "lan.",
-				},
-				TTL:                 60 * 60,
-				Debug:               true,
-				UnifiControllerURL:  s.URL,
-				UnifiSite:           "default",
-				UnifiUsername:       "admin",
-				UnifiPassword:       "admin",
-				UnifiSSLFingerprint: nil,
-			},
-		}
-		d := &dummyResponseWriter{}
-		p.ServeDNS(context.Background(), d, &dns.Msg{
-			Question: []dns.Question{
-				{
-					Name:   "server2.lan.",
-					Qclass: dns.ClassINET,
-					Qtype:  dns.TypeA,
-				},
-			},
-		})
-		require.Equal(t, 0, len(d.GetMsgs()))
-	})
-
-	t.Run("No Questions", func(t *testing.T) {
-		s := MockUnifiController(nil, "lan", "server1", "127.0.0.1")
-		defer s.Close()
-		p := unifinames{
-			Config: &config{
-				Networks: map[string]string{
-					"lan": "lan.",
-				},
-				TTL:                 60 * 60,
-				Debug:               true,
-				UnifiControllerURL:  s.URL,
-				UnifiSite:           "default",
-				UnifiUsername:       "admin",
-				UnifiPassword:       "admin",
-				UnifiSSLFingerprint: nil,
-			},
-		}
-		d := &dummyResponseWriter{}
-		p.ServeDNS(context.Background(), d, &dns.Msg{})
-		require.Equal(t, 0, len(d.GetMsgs()))
-	})
-
-	t.Run("Invalid Class", func(t *testing.T) {
-		s := MockUnifiController(nil, "lan", "server1", "127.0.0.1")
-		defer s.Close()
-		p := unifinames{
-			Config: &config{
-				Networks: map[string]string{
-					"lan": "lan.",
-				},
-				TTL:                 60 * 60,
-				Debug:               true,
-				UnifiControllerURL:  s.URL,
-				UnifiSite:           "default",
-				UnifiUsername:       "admin",
-				UnifiPassword:       "admin",
-				UnifiSSLFingerprint: nil,
-			},
-		}
-		d := &dummyResponseWriter{}
-		p.ServeDNS(context.Background(), d, &dns.Msg{
-			Question: []dns.Question{
-				{
-					Name:   "server1.lan.",
-					Qclass: dns.ClassINET,
-					Qtype:  dns.TypeA,
-				},
-			},
-		})
-		require.Equal(t, 0, len(d.GetMsgs()))
-	})
-
-	t.Run("verify unifi fingerprint", func(t *testing.T) {
 		var fp []byte
 		s := MockUnifiController(&fp, "lan", "server1", "127.0.0.1")
 		defer s.Close()
@@ -320,6 +168,132 @@ func TestServeDNS(t *testing.T) {
 				},
 			},
 		})
+		require.Equal(t, 1, len(d.GetMsgs()))
+		require.Equal(t, 1, len(d.GetMsgs()[0].Answer))
+		require.Equal(t, dns.Class(dns.ClassINET), dns.Class(d.GetMsgs()[0].Answer[0].Header().Class))
+		require.Equal(t, dns.Type(dns.TypeA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
+		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
+		require.Equal(t, net.ParseIP("127.0.0.1"), d.GetMsgs()[0].Answer[0].(*dns.A).A)
+	})
+
+	t.Run("AAAA", func(t *testing.T) {
+		var fp []byte
+		s := MockUnifiController(&fp, "lan", "server1", "::1")
+		defer s.Close()
+		p := unifinames{
+			Config: &config{
+				Networks: map[string]string{
+					"lan": "lan.",
+				},
+				TTL:                 60 * 60,
+				Debug:               true,
+				UnifiControllerURL:  s.URL,
+				UnifiSite:           "default",
+				UnifiUsername:       "admin",
+				UnifiPassword:       "admin",
+				UnifiSSLFingerprint: fp,
+			},
+		}
+		d := &dummyResponseWriter{}
+		p.ServeDNS(context.Background(), d, &dns.Msg{
+			Question: []dns.Question{
+				{
+					Name:   "server1.lan.",
+					Qclass: dns.ClassINET,
+					Qtype:  dns.TypeAAAA,
+				},
+			},
+		})
+		require.Equal(t, 1, len(d.GetMsgs()))
+		require.Equal(t, 1, len(d.GetMsgs()[0].Answer))
+		require.Equal(t, dns.Class(dns.ClassINET), dns.Class(d.GetMsgs()[0].Answer[0].Header().Class))
+		require.Equal(t, dns.Type(dns.TypeAAAA), dns.Type(d.GetMsgs()[0].Answer[0].Header().Rrtype))
+		require.Equal(t, "server1.lan.", d.GetMsgs()[0].Answer[0].Header().Name)
+		require.Equal(t, net.ParseIP("::1"), d.GetMsgs()[0].Answer[0].(*dns.AAAA).AAAA)
+	})
+
+	t.Run("Unknown Client", func(t *testing.T) {
+		var fp []byte
+		s := MockUnifiController(&fp, "lan", "server1", "127.0.0.1")
+		defer s.Close()
+		p := unifinames{
+			Config: &config{
+				Networks: map[string]string{
+					"lan": "lan.",
+				},
+				TTL:                 60 * 60,
+				Debug:               true,
+				UnifiControllerURL:  s.URL,
+				UnifiSite:           "default",
+				UnifiUsername:       "admin",
+				UnifiPassword:       "admin",
+				UnifiSSLFingerprint: fp,
+			},
+		}
+		d := &dummyResponseWriter{}
+		p.ServeDNS(context.Background(), d, &dns.Msg{
+			Question: []dns.Question{
+				{
+					Name:   "server2.lan.",
+					Qclass: dns.ClassINET,
+					Qtype:  dns.TypeA,
+				},
+			},
+		})
+		require.Equal(t, 0, len(d.GetMsgs()))
+	})
+
+	t.Run("No Questions", func(t *testing.T) {
+		var fp []byte
+		s := MockUnifiController(&fp, "lan", "server1", "127.0.0.1")
+		defer s.Close()
+		p := unifinames{
+			Config: &config{
+				Networks: map[string]string{
+					"lan": "lan.",
+				},
+				TTL:                 60 * 60,
+				Debug:               true,
+				UnifiControllerURL:  s.URL,
+				UnifiSite:           "default",
+				UnifiUsername:       "admin",
+				UnifiPassword:       "admin",
+				UnifiSSLFingerprint: fp,
+			},
+		}
+		d := &dummyResponseWriter{}
+		p.ServeDNS(context.Background(), d, &dns.Msg{})
+		require.Equal(t, 0, len(d.GetMsgs()))
+	})
+
+	t.Run("Invalid Class", func(t *testing.T) {
+		var fp []byte
+		s := MockUnifiController(&fp, "lan", "server1", "127.0.0.1")
+		defer s.Close()
+		p := unifinames{
+			Config: &config{
+				Networks: map[string]string{
+					"lan": "lan.",
+				},
+				TTL:                 60 * 60,
+				Debug:               true,
+				UnifiControllerURL:  s.URL,
+				UnifiSite:           "default",
+				UnifiUsername:       "admin",
+				UnifiPassword:       "admin",
+				UnifiSSLFingerprint: fp,
+			},
+		}
+		d := &dummyResponseWriter{}
+		p.ServeDNS(context.Background(), d, &dns.Msg{
+			Question: []dns.Question{
+				{
+					Name:   "server1.lan.",
+					Qclass: dns.ClassANY,
+					Qtype:  dns.TypeA,
+				},
+			},
+		})
 		require.Equal(t, 0, len(d.GetMsgs()))
 	})
 
@@ -342,6 +316,36 @@ func TestServeDNS(t *testing.T) {
 				UnifiUsername:       "admin",
 				UnifiPassword:       "admin",
 				UnifiSSLFingerprint: fp,
+			},
+		}
+		d := &dummyResponseWriter{}
+		p.ServeDNS(context.Background(), d, &dns.Msg{
+			Question: []dns.Question{
+				{
+					Name:   "server1.lan.",
+					Qclass: dns.ClassINET,
+					Qtype:  dns.TypeA,
+				},
+			},
+		})
+		require.Equal(t, 0, len(d.GetMsgs()))
+	})
+
+	t.Run("no fingerprint", func(t *testing.T) {
+		s := MockUnifiController(nil, "lan", "server1", "127.0.0.1")
+		defer s.Close()
+		p := unifinames{
+			Config: &config{
+				Networks: map[string]string{
+					"lan": "lan.",
+				},
+				TTL:                 60 * 60,
+				Debug:               true,
+				UnifiControllerURL:  s.URL,
+				UnifiSite:           "default",
+				UnifiUsername:       "admin",
+				UnifiPassword:       "admin",
+				UnifiSSLFingerprint: nil,
 			},
 		}
 		d := &dummyResponseWriter{}

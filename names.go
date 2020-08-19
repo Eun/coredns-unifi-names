@@ -48,21 +48,6 @@ func (p *unifinames) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 func (*unifinames) Name() string { return "unifi-names" }
 
 func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
-	if p.nextUpdate.Before(time.Now()) {
-		p.mu.Lock()
-		if p.Config.Debug {
-			log.Println("[unifi-names] updating clients")
-		}
-		if err := p.getClients(context.Background()); err != nil {
-			p.mu.Unlock()
-			log.Printf("[unifi-names] unable to get clients: %v\n", err)
-			return false
-		}
-		p.mu.Unlock()
-		log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
-		p.nextUpdate = time.Now().Add(time.Duration(p.Config.TTL) * time.Second)
-	}
-
 	if len(r.Question) <= 0 {
 		return false
 	}
@@ -77,6 +62,10 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 
 		switch question.Qtype {
 		case dns.TypeA:
+			name := strings.ToLower(question.Name)
+			if p.shouldHandle(name) {
+				p.getClientsIfNeeded()
+			}
 			p.mu.Lock()
 			for _, client := range p.aClients {
 				if strings.EqualFold(client.Hdr.Name, question.Name) {
@@ -86,6 +75,10 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 			}
 			p.mu.Unlock()
 		case dns.TypeAAAA:
+			name := strings.ToLower(question.Name)
+			if p.shouldHandle(name) {
+				p.getClientsIfNeeded()
+			}
 			p.mu.Lock()
 			for _, client := range p.aaaaClients {
 				if strings.EqualFold(client.Hdr.Name, question.Name) {
@@ -108,6 +101,32 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 		return true
 	}
 	return false
+}
+
+func (p *unifinames) shouldHandle(name string) bool {
+	for _, domain := range p.Config.Networks {
+		if strings.HasSuffix(name, domain) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *unifinames) getClientsIfNeeded() {
+	if p.nextUpdate.Before(time.Now()) {
+		p.mu.Lock()
+		if p.Config.Debug {
+			log.Println("[unifi-names] updating clients")
+		}
+		if err := p.getClients(context.Background()); err != nil {
+			p.mu.Unlock()
+			log.Printf("[unifi-names] unable to get clients: %v\n", err)
+			return
+		}
+		p.mu.Unlock()
+		log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
+		p.nextUpdate = time.Now().Add(time.Duration(p.Config.TTL) * time.Second)
+	}
 }
 
 var reSetCookieToken = regexp.MustCompile(`unifises=([0-9a-zA-Z]+)`)

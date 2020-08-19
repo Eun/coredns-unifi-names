@@ -35,7 +35,7 @@ func TestNewConfigFromDispenser(t *testing.T) {
 		require.Equal(t, "default", config.UnifiSite)
 		require.Equal(t, "admin", config.UnifiUsername)
 		require.Equal(t, "test", config.UnifiPassword)
-		require.Equal(t, "deadbeef", config.UnifiSSLFingerprint)
+		require.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, config.UnifiSSLFingerprint)
 	})
 	t.Run("Emtpy Config", func(t *testing.T) {
 		dispenser := caddyfile.NewDispenser("", bytes.NewReader([]byte(`
@@ -71,7 +71,7 @@ func TestNewConfigFromDispenser(t *testing.T) {
 		require.Equal(t, "default", config.UnifiSite)
 		require.Equal(t, "admin", config.UnifiUsername)
 		require.Equal(t, "test", config.UnifiPassword)
-		require.Equal(t, "deadbeef", config.UnifiSSLFingerprint)
+		require.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, config.UnifiSSLFingerprint)
 	})
 	t.Run("Invalid Network", func(t *testing.T) {
 		dispenser := caddyfile.NewDispenser("", bytes.NewReader([]byte(`
