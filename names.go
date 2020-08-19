@@ -90,7 +90,7 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 				p.mu.Lock()
 				for _, client := range p.aClients {
 					if strings.EqualFold(client.Hdr.Name, question.Name) {
-						client.Hdr.Ttl = uint32(time.Now().Sub(p.lastUpdate).Seconds())
+						client.Hdr.Ttl = p.Config.TTL - uint32(time.Now().Sub(p.lastUpdate).Seconds())
 						rrs = append(rrs, &client)
 						break
 					}
@@ -102,7 +102,7 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 				p.mu.Lock()
 				for _, client := range p.aaaaClients {
 					if strings.EqualFold(client.Hdr.Name, question.Name) {
-						client.Hdr.Ttl = uint32(time.Now().Sub(p.lastUpdate).Seconds())
+						client.Hdr.Ttl = p.Config.TTL - uint32(time.Now().Sub(p.lastUpdate).Seconds())
 						rrs = append(rrs, &client)
 						break
 					}
