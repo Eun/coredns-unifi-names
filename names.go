@@ -21,6 +21,8 @@ import (
 
 	"crypto/sha1"
 
+	"sync"
+
 	"github.com/coredns/coredns/plugin"
 	"github.com/miekg/dns"
 )
@@ -31,6 +33,7 @@ type unifinames struct {
 	aClients    []*dns.A
 	aaaaClients []*dns.AAAA
 	nextUpdate  time.Time
+	mu          sync.Mutex
 }
 
 // ServeDNS implements the middleware.Handler interface.
@@ -46,13 +49,17 @@ func (*unifinames) Name() string { return "unifi-names" }
 
 func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 	if p.nextUpdate.Before(time.Now()) {
+		p.mu.Lock()
 		if p.Config.Debug {
 			log.Println("[unifi-names] updating clients")
 		}
 		if err := p.getClients(context.Background()); err != nil {
+			p.mu.Unlock()
 			log.Printf("[unifi-names] unable to get clients: %v\n", err)
 			return false
 		}
+		p.mu.Unlock()
+		log.Printf("[unifi-names] got %d hosts", len(p.aClients)+len(p.aaaaClients))
 		p.nextUpdate = time.Now().Add(time.Duration(p.Config.TTL) * time.Second)
 	}
 
@@ -70,19 +77,23 @@ func (p *unifinames) resolve(w dns.ResponseWriter, r *dns.Msg) bool {
 
 		switch question.Qtype {
 		case dns.TypeA:
+			p.mu.Lock()
 			for _, client := range p.aClients {
 				if strings.EqualFold(client.Hdr.Name, question.Name) {
 					rrs = append(rrs, client)
 					break
 				}
 			}
+			p.mu.Unlock()
 		case dns.TypeAAAA:
+			p.mu.Lock()
 			for _, client := range p.aaaaClients {
 				if strings.EqualFold(client.Hdr.Name, question.Name) {
 					rrs = append(rrs, client)
 					break
 				}
 			}
+			p.mu.Unlock()
 		}
 	}
 
