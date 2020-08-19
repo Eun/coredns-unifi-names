@@ -121,7 +121,7 @@ func (p *unifinames) getClients(ctx context.Context) error {
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: p.Config.UnifiSSLFingerprint == nil,
+				InsecureSkipVerify: len(p.Config.UnifiSSLFingerprint) > 0,
 				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 					if p.Config.UnifiSSLFingerprint == nil {
 						return errors.New("should never happen")
