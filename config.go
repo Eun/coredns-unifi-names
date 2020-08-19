@@ -91,7 +91,7 @@ func newConfigFromDispenser(c caddyfile.Dispenser) (*config, error) {
 		log.Printf("[unifi-names] Parsed %d Networks\n", len(config.Networks))
 		log.Printf("[unifi-names] TTL is %d", config.TTL)
 		log.Printf("[unifi-names] Controller URL is `%s'", config.UnifiControllerURL)
-		log.Printf("[unifi-names] Controller SSL fingerprint is `%s'", config.UnifiSSLFingerprint)
+		log.Printf("[unifi-names] Controller SSL fingerprint is `%x'", config.UnifiSSLFingerprint)
 	}
 	if len(config.Networks) <= 0 {
 		return nil, fmt.Errorf("There are no networks to handle")
